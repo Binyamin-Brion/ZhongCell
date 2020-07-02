@@ -72,7 +72,7 @@ struct SIR
         return neq;
     }
 
-    std::string cell_id;
+
     unsigned int population;
     unsigned int phase;
     int num_inf;
@@ -112,7 +112,6 @@ std::ostream &operator << (std::ostream &os, const SIR &sir)
 
 void from_json(const nlohmann::json &json, SIR &sir)
 {
-    json.at("cell_id").get_to(sir.cell_id);
     json.at("population").get_to(sir.population);
     json.at("susceptible").get_to(sir.susceptible);
     json.at("infected").get_to(sir.infected);

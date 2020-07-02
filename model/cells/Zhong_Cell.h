@@ -296,6 +296,9 @@ template <typename T>
                 SIR nstate = state.neighbors_state.at(neighbor);
                 Vicinity v = state.neighbors_vicinity.at(neighbor);
 
+                // TODO: This correlation factor is computed every time this function is called, whch may not be ideal.
+                v.computeCorrelationFactor(cstate.border_length, nstate.border_length);
+
                 for (int i = 0; i < nstate.num_inf; ++i) {
                     inf += v.correlationFactor * movilityRates[cstate.phase][i] * cstate.susceptible *
                            ((float)nstate.population / (float)cstate.population) *
