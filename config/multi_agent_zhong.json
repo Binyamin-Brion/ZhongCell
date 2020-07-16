@@ -9,7 +9,8 @@
             "recovered": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         },
         "default_vicinity": {
-            "correlation": 1
+            "correlation": 1,
+            "neighbour_influence": {"1.0": 1.0}
         },
         "default_config": {
             "zhong": {
@@ -37,7 +38,7 @@
                     [0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6],
                     [0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6]
                 ],
-                "infection_correction_factors": {"0.02": 0.5, "0.4": 0.7}
+                "infection_correction_factors": {"0.02": 0.7, "0.4": 0.9}
             }
         }
     },
@@ -55,11 +56,11 @@
                 { "cell_id": "Country1" },
                 {
                     "cell_id": "Country2",
-                    "vicinity": { "correlation": 0.2 }
+                    "vicinity": { "correlation": 0.2, "neighbour_influence": {"0.05": 1, "0.1": 1}  }
                 },
                 {
                     "cell_id": "Country3",
-                    "vicinity": { "correlation": 0.3 }
+                    "vicinity": { "correlation": 0.2, "neighbour_influence": {"0.05": 1, "0.1": 1}  }
                 }
             ]
         },
@@ -68,12 +69,12 @@
             "neighborhood": [
                 {
                     "cell_id": "Country1",
-                    "vicinity": { "correlation": 0.2 }
+                    "vicinity": { "correlation": 0.2, "neighbour_influence": {"0.05": 1, "0.1": 1}  }
                 },
                 { "cell_id": "Country2" },
                 {
                     "cell_id": "Country3",
-                    "vicinity": { "correlation": 0.4 }
+                    "vicinity": { "correlation": 0.2, "neighbour_influence": {"0.05": 1, "0.1": 1}  }
                 }
             ]
         },
@@ -82,11 +83,11 @@
             "neighborhood": [
                 {
                     "cell_id": "Country1",
-                    "vicinity": { "correlation": 0.3 }
+                    "vicinity": { "correlation": 0.2, "neighbour_influence": {"0.05": 1, "0.1": 1}  }
                 },
                 {
                     "cell_id": "Country2",
-                    "vicinity": { "correlation": 0.4 }
+                    "vicinity": { "correlation": 0.2, "neighbour_influence": {"0.05": 1, "0.1": 1}  }
                 },
                 { "cell_id": "Country3" }
             ]

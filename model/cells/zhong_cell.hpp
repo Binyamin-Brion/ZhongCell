@@ -161,13 +161,13 @@ public:
         double inf = 0;
         sir cstate = state.current_state;
 
-        // disobedient people have a correction factor of 1. The rest of the population -> whatever in the configuration
-        float correction = disobedient + (1 - disobedient) * movement_correction_factor();
-
         // external infected
         for(auto neighbor: neighbors) {
             sir nstate = state.neighbors_state.at(neighbor);
             vicinity v = state.neighbors_vicinity.at(neighbor);
+
+            // disobedient people have a correction factor of 1. The rest of the population -> whatever in the configuration
+            float correction = disobedient + (1 - disobedient) * movement_correction_factor(nstate, v.neighbourhood_influence_rates);
 
             for (int age_sub_division = 0; age_sub_division < nstate.age_divided_populations.size(); ++age_sub_division) {
                 for (int i = 0; i < nstate.get_num_infected(); ++i) {
@@ -185,47 +185,23 @@ public:
         return std::min(cstate.susceptible, inf);
     }
 
-    float movement_correction_factor() const {
+    float get_mapped_range_value(const std::map<float, float>& ranges, float value) const {
 
-        // To find the range that the current total_infections is in, an iterator to an element in infection_correction_factors plus
-        // an iterator to the next element is used (the keys of both elements define the lower and higher range threshold respectively).
-        // Note: An ordered map must be used to ensure this works, and map iterators are bidirectional- not random access. Hence separate
-        //       lines to increment or de-increment iterators.
+        float correction = ranges.at(0.0);
+        bool found_range = false;
 
-        sir res = state.current_state;
-
-        float total_infections = std::accumulate(res.infected.begin(), res.infected.end(), 0.0f);
-
-        // TODO I think that the following piece of code is equivant but more readable, what do you think?
-        float correction = correction_factors.at(0.0);
-        for (auto const &pair: correction_factors) {
-            if (total_infections >= pair.first)
+        for (auto const &pair: ranges) {
+            if (value >= pair.first) {
                 correction = pair.second;
-            else
-                break;
-        }
-        // Here correction contains the desired value
-
-        auto iterator = correction_factors.begin();
-        // Two things:
-        // First: For every iteration of the container, the next element will be referenced. Therefore one element before
-        //        the end of the container is the element to iterate to.
-        // Second: There will always be at least two elements in the container (keys 0.0 and 1.0; see from_json() in simulation_configuration.hpp)
-        auto end_container_iterator = correction_factors.end();
-        --end_container_iterator;
-
-        // From this point onwards, the iterator variable can be thought of as lower_range_threshold
-        while(iterator != end_container_iterator) {
-
-            auto upper_range_threshold = iterator;
-            ++upper_range_threshold;
-
-            if(total_infections >= iterator->second && total_infections <= upper_range_threshold->second) {
-
-                return iterator->second;
             }
+            else {
+                found_range = true;
+                break;
+            }
+        }
 
-            ++iterator;
+        if(found_range) {
+            return correction;
         }
 
         // If the infection value did not match any infection range, then an error occurred, as all of the ranges
@@ -238,10 +214,26 @@ public:
             ranges_given += std::to_string(i.first) + " , " + std::to_string(i.second) + '\n';
         }
 
-        std::cerr << "No range given for the current infection value of: " << total_infections << ". The ranges are as follows: \n"
+        std::cerr << "No range given for the current infection value of: " << value << ". The ranges are as follows: \n"
                   << ranges_given << std::endl;
 
         assert(false);
+    }
+
+    float movement_correction_factor(const sir &neighbour_state, const std::map<float, float> &neighbour_influences) const {
+
+        sir res = state.current_state;
+
+        float current_infections = std::accumulate(res.infected.begin(), res.infected.end(), 0.0f);
+
+        float neighbour_infections = std::accumulate(neighbour_state.infected.begin(), neighbour_state.infected.end(), 0.0f);
+
+        // Determine how much of the neighbour's infected population to take into account when determining correction factors
+        float neighbour_influence = get_mapped_range_value(neighbour_influences, neighbour_infections);
+
+        float total_infections = current_infections + neighbour_infections * neighbour_influence;
+
+        return get_mapped_range_value(correction_factors, total_infections);
     }
 };
 
