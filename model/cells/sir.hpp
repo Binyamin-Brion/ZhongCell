@@ -127,7 +127,7 @@ std::ostream &operator<<(std::ostream &os, const sir &sir) {
             new_recoveries += sir.recovered.at(i).at(0) * sir.age_group_proportions.at(i);
         }
 
-        os << "<" << sir.get_total_susceptible() << "," << sir.get_total_infections() << "," << sir.get_total_recovered() << "," << sir.get_total_fatalities() << "," << new_infections << "," << new_recoveries << ">";
+        os << "<" << sir.get_total_susceptible() << "," << sir.get_total_infections() << "," << sir.get_total_recovered() << "," << new_infections << "," << new_recoveries <<  "," << sir.get_total_fatalities() << ">";
     }
 
     return os;

@@ -51,6 +51,7 @@ public:
     std::map<infection_threshold, mobility_correction_factor> correction_factors;
 
     int precDivider;
+    bool SIIRS_model = true;
 
     zhong_cell() : cell<T, std::string, sir, vicinity>() {}
 
@@ -69,6 +70,7 @@ public:
         over_capacity_fatality_modifier = config.over_capacity_fatality_modifier;
 
         precDivider = config.precision;
+        SIIRS_model = config.SIIRS_model;
 
         assert(virulence_rates.size() == recovery_rates.size() && virulence_rates.size() == mobility_rates.size() &&
                "\n\nThere must be an equal number of age segments between all configuration rates.\n\n");
@@ -101,7 +103,7 @@ public:
             // fatalities, or vice-versa. This would change the meaning of the input.
 
             // Equation 6e
-            for (int i = 0; i < res.get_num_recovered_phases() - 1; ++i)
+            for (int i = 0; i < res.get_num_infected_phases() - 1; ++i)
             {
                 // Calculate all of the new recovered- for every day that a population is infected, some recover.
                 recovered[i] += std::round(res.infected[age_segment_index][i] * recovery_rates[age_segment_index][i] * precDivider) / precDivider;
@@ -177,8 +179,16 @@ public:
             // The susceptible population does those that just became infected
             new_s -= new_i;
 
+            int recovered_index = res.get_num_recovered_phases() - 1;
+
+            if(!SIIRS_model) {
+                res.recovered.at(age_segment_index).back() += res.recovered.at(age_segment_index).at(res.get_num_recovered_phases() - 2);
+                new_s -= res.recovered.at(age_segment_index).back();
+                recovered_index -= 1;
+            }
+
             // Equation 6a
-            for (int i = res.get_num_recovered_phases() - 1; i > 0; --i)
+            for (int i = recovered_index; i > 0; --i)
             {
                 // Each day of the recovered is the value of the previous day. The population on the last day is
                 // now susceptible; this is implicitly done already as the susceptible value was set to 1.0 and the

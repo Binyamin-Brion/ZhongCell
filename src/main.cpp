@@ -74,7 +74,7 @@ int main(int argc, char ** argv) {
     std::shared_ptr<cadmium::dynamic::modeling::coupled<TIME>> t = std::make_shared<zhong_coupled<TIME>>(test);
 
     cadmium::dynamic::engine::runner<TIME, logger_top> r(t, {0});
-    float sim_time = (argc > 2)? atof(argv[2]) : 500;
+    float sim_time = (argc > 2)? atof(argv[2]) : 1000;
     r.run_until(sim_time);
     return 0;
 }

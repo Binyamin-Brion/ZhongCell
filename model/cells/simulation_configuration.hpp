@@ -27,6 +27,7 @@ struct simulation_configuration
 
     double hospital_infected_capacity;
     double over_capacity_fatality_modifier;
+    bool SIIRS_model = true;
 };
 
 void from_json(const nlohmann::json& j, simulation_configuration &v) {
@@ -34,6 +35,7 @@ void from_json(const nlohmann::json& j, simulation_configuration &v) {
     j.at("disobedient").get_to(v.disobedient);
     j.at("precision").get_to(v.precision);
     j.at("virulence_rates").get_to(v.virulence_rates);
+    j.at("SIIRS_model").get_to(v.SIIRS_model);
     j.at("recovery_rates").get_to(v.recovery_rates);
     j.at("mobility_rates").get_to(v.mobility_rates);
     j.at("fatality_rates").get_to(v.fatality_rates);
