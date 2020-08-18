@@ -30,6 +30,7 @@
 #include <cadmium/engine/pdevs_dynamic_runner.hpp>
 #include <cadmium/logger/common_loggers.hpp>
 #include "../model/zhong_coupled.hpp"
+#include <experimental/filesystem>
 
 using namespace std;
 using namespace cadmium;
@@ -66,15 +67,48 @@ int main(int argc, char ** argv) {
         return -1;
     }
 
-    zhong_coupled<TIME> test = zhong_coupled<TIME>("pandemic_hoya");
-    std::string scenario_config_file_path = argv[1];
-    test.add_cells_json(scenario_config_file_path);
-    test.couple_cells();
+    try {
 
-    std::shared_ptr<cadmium::dynamic::modeling::coupled<TIME>> t = std::make_shared<zhong_coupled<TIME>>(test);
+        // Check to see if file exists along with an error message because otherwise, the JSON library fails and gives
+        // a useless error message.
+        if(!std::experimental::filesystem::exists(argv[1])) {
+            throw std::runtime_error{"The passed in file does not exist: " + std::string{argv[1]}};
+        }
 
-    cadmium::dynamic::engine::runner<TIME, logger_top> r(t, {0});
-    float sim_time = (argc > 2)? atof(argv[2]) : 500;
-    r.run_until(sim_time);
+        zhong_coupled<TIME> test = zhong_coupled<TIME>("pandemic_hoya");
+        std::string scenario_config_file_path = argv[1];
+        test.add_cells_json(scenario_config_file_path);
+        test.couple_cells();
+
+        std::shared_ptr<cadmium::dynamic::modeling::coupled<TIME>> t = std::make_shared<zhong_coupled<TIME>>(test);
+
+        cadmium::dynamic::engine::runner<TIME, logger_top> r(t, {0});
+        float sim_time = (argc > 2)? atof(argv[2]) : 500;
+        r.run_until(sim_time);
+    }
+    catch(const std::exception &e) {
+
+        std::ofstream print_error{"execution_errors.txt", std::ios::trunc};
+
+        // Hopefully user sees this- not much can be done if a file to write an exception could not be created and the user
+        // can't see what the exception is in the terminal if the std::cerr command fails.
+        if(!print_error.is_open()) {
+            std::cerr << "Unable to create a file to write exceptions to!" << std::endl;
+
+            return -1;
+        }
+
+        std::cerr << e.what() << std::endl;
+
+        print_error << e.what();
+
+        // Just to be explicit about this- could omit due to RAII.
+        print_error.flush();
+
+        print_error.close();
+
+        return -2;
+    }
+
     return 0;
 }
