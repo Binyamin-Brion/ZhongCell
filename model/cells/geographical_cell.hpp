@@ -57,6 +57,10 @@ public:
                       std::string const &delay_id, simulation_config config) :
     cell<T, std::string, sir, vicinity>(cell_id, neighborhood, initial_state, delay_id) {
 
+        for(const auto &i : neighborhood) {
+            state.current_state.hysteresis_factors.insert({i.first, hysteresis_factor{}});
+        }
+
         virulence_rates = std::move(config.virulence_rates);
         recovery_rates = std::move(config.recovery_rates);
         mobility_rates = std::move(config.mobility_rates);
@@ -82,7 +86,7 @@ public:
         // age group contributes to the population does not need to be taken into account.
         for(int age_segment_index = 0; age_segment_index < res.get_num_age_segments(); ++age_segment_index) {
 
-            double new_i = std::round(new_infections(age_segment_index) * precDivider) / precDivider;
+            double new_i = std::round(new_infections(age_segment_index, res) * precDivider) / precDivider;
 
             // Of the population that is on the last day of the infection, they are now considered recovered.
             std::vector<double> recovered(res.get_num_infected_phases(), 0.0f);
@@ -205,9 +209,8 @@ public:
         return 1;
     }
 
-    double new_infections(unsigned int age_segment_index) const {
+    double new_infections(unsigned int age_segment_index, sir &current_sir) const {
         double inf = 0;
-        sir cstate = state.current_state;
 
         // Right now assume a reasonable default value- the actual movement correction factor experienced by the current
         // cell will be found in the below for-loop.
@@ -219,7 +222,7 @@ public:
                 vicinity v = state.neighbors_vicinity.at(neighbor);
 
                 // disobedient people have a correction factor of 1. The rest of the population -> whatever in the configuration
-                current_cell_correction_factor = disobedient + (1 - disobedient) * movement_correction_factor(v.correction_factors, nstate.get_total_infections(), v.neighbour_hysteresis_factor);
+                current_cell_correction_factor = disobedient + (1 - disobedient) * movement_correction_factor(v.correction_factors, nstate.get_total_infections(), current_sir.hysteresis_factors[neighbor], neighbor);
             }
         }
 
@@ -229,7 +232,7 @@ public:
             vicinity v = state.neighbors_vicinity.at(neighbor);
 
             // disobedient people have a correction factor of 1. The rest of the population -> whatever in the configuration
-            double neighbor_correction = disobedient + (1 - disobedient) * movement_correction_factor(v.correction_factors, nstate.get_total_infections(), v.neighbour_hysteresis_factor);
+            double neighbor_correction = disobedient + (1 - disobedient) * movement_correction_factor(v.correction_factors, nstate.get_total_infections(), current_sir.hysteresis_factors[neighbor], neighbor);
 
             // Logically makes sense to require neighboring cells to follow the movement restriction that is currently
             // in place in the current cell if the current cell has a more restrictive movement.
@@ -239,16 +242,16 @@ public:
 
                 inf += v.correlation * mobility_rates[age_segment_index][i] * // variable Cij
                        virulence_rates[age_segment_index][i] * // variable lambda
-                       cstate.susceptible[age_segment_index] * nstate.get_total_infections() * // variables Si and Ij, respectively
+                       current_sir.susceptible[age_segment_index] * nstate.get_total_infections() * // variables Si and Ij, respectively
                        neighbor_correction;  // New infections may be slightly fewer if there are mobility restrictions
             }
         }
 
-        return std::min(cstate.susceptible[age_segment_index], inf);
+        return std::min(current_sir.susceptible[age_segment_index], inf);
     }
 
     float movement_correction_factor(const std::map<infection_threshold, mobility_correction_factor> &mobility_correction_factors,
-                                     float infectious_population, hysteresis_factor &hysteresisFactor) const {
+                                     float infectious_population, hysteresis_factor &hysteresisFactor, std::string neighbor) const {
 
         // For example, assume a correction factor of "0.4": [0.2, 0.1]. If the infection goes above 0.4, then the
         // correction factor of 0.2 will now be applied to total infection values above 0.3, no longer 0.4 as the
@@ -257,7 +260,9 @@ public:
             hysteresisFactor.in_effect = false;
         }
 
-        if(hysteresisFactor.in_effect && infectious_population >= hysteresisFactor.infections_lower_bound) {
+        // This should probably be '>', not '>=' ; otherwise if the lower bound is 0 there is not way for the hysteresis
+        // to disappear as the infections can never go below 0
+        if(hysteresisFactor.in_effect && infectious_population > hysteresisFactor.infections_lower_bound) {
             return hysteresisFactor.mobility_correction_factor;
         }
 

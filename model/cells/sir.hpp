@@ -6,6 +6,7 @@
 #define PANDEMIC_HOYA_2002_SIR_HPP
 
 #include <iostream>
+#include "hysteresis_factor.hpp"
 #include <nlohmann/json.hpp>
 
 struct sir {
@@ -14,6 +15,7 @@ struct sir {
     std::vector<std::vector<double>> infected;
     std::vector<std::vector<double>> recovered;
     std::vector<double> fatalities;
+    std::unordered_map<std::string, hysteresis_factor> hysteresis_factors;
 
     // Required for the JSON library, as types used with it must be default-constructable.
     // The overloaded constructor results in a default constructor having to be manually written.
@@ -89,7 +91,7 @@ bool operator<(const sir &lhs, const sir &rhs) { return true; }
 
 std::ostream &operator<<(std::ostream &os, const sir &sir) {
 
-    bool print_specific_state_information = true;
+    bool print_specific_state_information = false;
 
     if(print_specific_state_information) {
         std::string susceptible_information;
